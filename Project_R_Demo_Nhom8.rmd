@@ -1,0 +1,502 @@
+---
+title: "Project R about Data Analysis of Diabetes"
+author: "Nhom_8"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    highlight: espresso
+    theme: simplex
+    df_print: kable
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Giới thiệu
+
+![](https://openscience.vn/chi-tiet-du-lieu/bo-du-lieu-du-doan-benh-tieu-duong-11350?fbclid=IwAR08RKmQo517LivtFdrv1U79HeYoGsbRfvR73RW5H1FVnLrxvm_i3qSPoEQ)
+
+-   Dữ liệu y tế và nhân khẩu học của phụ nữ để dự đoán bệnh tiểu đường.
+    Bộ dữ liệu này chứa thông tin về 769 phụ nữ và bao gồm nhiều thuộc
+    tính liên quan đến sức khỏe.
+
+-   Tập dữ liệu này cung cấp thông tin nhanh về các đặc điểm sức khỏe
+    của những phụ nữ này, đóng vai trò là nguồn tài nguyên quý giá để
+    phân tích các yếu tố liên quan đến bệnh tiểu đường. Sự đơn giản của
+    cấu trúc dữ liệu cho phép khám phá và giải thích một cách đơn giản
+    mối quan hệ giữa các biến này và kết quả của bệnh tiểu đường.
+
+-   Trong đề tài này, sẽ phân tích về người phụ nữ có mắc bệnh tiểu
+    đường hay không và áp dụng các công cụ của máy học để dự đoán những
+    nguyên nhân nào dẫn tới việc bênh tiểu đường ở phụ nữ.
+
+## 2. Packages Infor
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(GGally)
+library(RColorBrewer)
+```
+
+## 3. Chuẩn bị dữ liệu
+
+### 3.1. Importing data
+
+```{r}
+df <- read.csv("D:/Bin/HK1_3/Lap_Trinh_R/CuoiKi/archive/diabetes.csv")
+```
+
+-   Hiểu dữ liệu bằng cách xem một số hàng đầu tiên của tập dữ liệu
+
+```{r}
+head(df)
+```
+
+-   Thông tin của các cột trong df: \_ Pregnancies: Số lần mang thai của
+    người phụ nữ \_ Glucoso: Nồng độ glucose trong huyết tương của người
+    phụ nữ. \_ BloodPressure: Huyết áp. \_ SkinThickness: Độ dày của da
+    (Độ dày của nếp gấp da ở cơ tam đầu) \_ Insulin: Nồng độ insulin
+    trong máu. \_ BMI: chỉ số cơ thể (Thước đo lượng mỡ trong cơ thể dựa
+    trên chiều cao và cân nặng). \_ DiabetesPedigreeFunction: Chức năng
+    cho thấy khả năng mắc bệnh tiểu đường dựa trên tiền sử gia đình. \_
+    Age: Độ tuổi người phụ nữ. \_ Outcome: Kết quả biến mục tiêu xem
+    người phụ nữ có mắc bệnh tiểu đường không (1 là có, 0 là không)
+
+-   Tiếp theo, quan sát thông tin chung của dữ liệu bằng lệnh sumary()
+    trong R.
+
+```{r}
+summary(df)
+```
+
+-   Cấu trúc của tập dữ liệu có thể được tham khảo như dưới đây, bằng
+    việc sử dụng lệnh str() tronng R:
+
+```{r}
+str(df)
+```
+
+## 3.Tiền xử lý dữ liệu
+
+-   Dựa trên giao diện của dữ liệu, chúng ta cần tiến hành xử lý sơ bộ
+    cột Outcome.
+
+-   Chuyển đổi chỉ báo mắc bệnh tiểu đường bằng số thành các
+    factors/categorical
+
+```{r}
+df$Outcome <- ifelse(df$Outcome==1,"Yes","No")
+df$Outcome <- as.factor(df$Outcome)
+head(df)
+```
+
+## 4. Data Analysis
+
+### Phân tích dữ liệu đơn biến\*\*
+
+-   Hãy thử và hình dung từng thuộc tính có liên quan của tập dữ liệu và
+    xem dữ liệu có thể cho chúng ta biết thêm thông tin gì.
+
+#### ***Attribute Outcome***
+
+```{r}
+ggplot(data=df, aes(x=Outcome, fill = Outcome)) + 
+geom_bar(position = "dodge") + 
+geom_text(stat = 'count', aes(label = after_stat(count)), position = position_dodge(0.9), vjust = -0.2) + ylab("Số người phụ nữ")
+```
+
+-   Nhìn biểu đồ ta thấy, có khoảng 268 người phụ nữ được cho là mắc
+    bệnh tiểu đường trên tổng số những người phụ nữ được khảo sát.
+
+#### ***Attribute Age***
+
+```{r}
+ggplot(data=df, aes(x=Age,)) + 
+geom_histogram(binwidth = 5) +
+  xlab("Tuổi") + ylab("Số phụ nữ")
+```
+
+-   Những khảo sát về người phụ nữ có ở nhiều độ tuổi khác nhau, hầu hết
+    họ đều nằm ở trong khoảng từ 20 đến 40 tuổi.
+
+#### ***Attribute BMI***
+
+```{r}
+ggplot(data = df, aes(x = BMI)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black", alpha = 0.7) +
+  xlab("BMI") + ylab("Số phụ nữ") +
+  ggtitle("Phân phối BMI của phụ nữ trong khảo sát")
+```
+
+-   Qua biểu đồ cho thấy, chỉ số BMI của phụ nữ trong khảo sát trên thì
+    hầu hết nằm 22 đến 39.
+
+### 5. Data Visualization
+
+#### ***Attribute Outcome between BMI and Age***
+
+```{r}
+ggplot(df, aes(x = Age, y = BMI, size = Outcome, color = Outcome)) +
+  geom_point(alpha = 0.7) +
+  scale_size_manual(values = c(3, 3), name = "Outcome") +
+  xlab("Tuổi") + ylab("Chỉ số BMI") +
+  ggtitle("Bubble Chart giữa Age, BMI và Outcome")
+```
+
+-   Như có thể thấy sự tập trung của hình tròn đỏ chủ yếu nằm ở phân
+    vùng của người phụ nữ ở độ tuổi từ 20 đến 30 và có chỉ số BMI ở mức
+    dao động từ 20 đến 40 là chủ yếu nhưng vẫn có những giá trị ngoại lệ
+    nằm rải rác nên không thể phản ánh chính xác về độ tuổi và chỉ số
+    BMI của một người phụ nữ có bị tiểu đường hay không.
+
+#### ***Attribute Outcome between Glucoso and Insulin***
+
+```{r}
+# Tạo một dataframe mới với các cột cần thiết
+df_subset <- df[, c("Glucose", "Insulin", "Outcome")]
+
+# Chuyển đổi dữ liệu sang định dạng long
+df_melted <- melt(df_subset, id.vars = "Outcome")
+
+# Tạo biểu đồ heatmap
+ggplot(df_melted, aes(x = variable, y = Outcome, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "blue") +
+  xlab("") + ylab("Outcome") +
+  ggtitle("Heatmap Chart giữa Glucose, Insulin và Outcome")
+```
+
+-   Biểu đồ này phản ánh giữa nồng độ Glucose và Insulin có trong máu
+    người phụ nữ có ảnh hưởng đến yếu tố mắc bệnh tiểu đường hay không.
+    Qua đó, ta thấy được Insulin có trong máu của người phụ nữ không ảnh
+    hưởng nhiều đến việc mắc bệnh mà bên cạnh đó thì Glucose lại biểu
+    hiện rất rõ với mức Glucose\>200 thì tỷ lệ cao người phụ nữ mắc
+    bệnh. Bên cạnh đó, biểu đồ chỉ thể hiện khách quan dựa trên 2 yếu tố
+    nên cũng không thể dễ dàng phán đoán mắc tỷ lệ mắc bệnh được.
+
+#### ***Attribute Survived and Pclass***
+
+```{r}
+ggpairs(df, columns = c("Age", "BloodPressure"),
+        mapping = aes(color = Outcome),
+        palette = brewer.pal(n = length(unique(df$Outcome)), name = "Set1"))
+```
+
+#MÔ HÌNH DECISION TREE
+
+##1. CÁC THƯ VIỆN ĐƯỢC SỬ DỤNG TRONG MÔ HÌNH DECISION TREE
+
+###\*\*\*Nạp thư viện
+
+```{r}
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(dplyr)
+library(caret)
+library(tree)
+```
+
+##2. XEM CẤU TRÚC CỦA BỘ DỮ LIỆU
+
+```{r}
+str(df)
+```
+
+##3. XÂY DỰNG MÔ HÌNH DECISION TREE
+
+###\*\*\*Tạo tập dữ liệu huấn luyện và kiểm tra
+
+```{r}
+set.seed(42)
+# Tạo tập dữ liệu huấn luyện và tập dữ liệu kiểm tra
+train <- createDataPartition(df[,"Outcome"],p=0.8,list=FALSE)
+datatrn <- df[train,]
+datatst <- df[-train,]
+```
+
+###\*\*\*Xem kích thước của các tập dữ liệu
+
+```{r}
+# Kích thước của tập dữ liệu huấn luyện
+dim(datatrn)
+# Kích thước của tập dữ liệu kiểm tra
+dim(datatst)
+```
+
+###\*\*\* Xây dụng decision tree
+
+```{r}
+#Tạo một trainControl để định cấu hình quá trình cross-validation với 10 folds.
+ctrl  <- trainControl(method  = "cv",number  = 10) 
+#Sử dụng hàm train() để huấn luyện mô hình với phương pháp "rpart" (cây quyết định) và sử dụng cross-validation để tinh chỉnh mô hình.
+fit.cv <- train(Outcome ~ ., data = datatrn, method = "rpart",
+  trControl = ctrl,  tuneLength = 30)
+```
+
+###\*\*\*Vẽ decision tree
+
+```{r}
+rpart.plot(fit.cv$finalModel)
+```
+
+##4. ĐÁNH GIÁ MÔ HÌNH \### \*\*\* Dự đoán trên tập dữ liệu kiểm tra
+
+```{r}
+predict_unseen <- predict(fit.cv, datatst)
+```
+
+### \*\*\*Tạo bảng ma trận dự đoán
+
+```{r}
+table_mat <- table(datatst$Outcome, predict_unseen)
+table_mat
+```
+
+### \*\*\*Tính độ chính xác
+
+```{r}
+# Tính độ chính xác trên tập dữ liệu kiểm tra
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+# In ra độ chính xác trên tập dữ liệu kiểm tra
+print(paste("Độ chính xác trên tập dữ liệu kiểm tra:", accuracy_Test))
+```
+
+Mô hình Decision Tree có mức độ dự đoán chính xác lên đến 71% cũng là
+một tỷ lệ dự đoán đúng khá cao!
+
+### \*\*\*Dự đoán trên một dữ liệu mới
+
+```{r}
+new_data <- tribble(~Pregnancies, ~Glucose, ~BloodPressure, ~SkinThickness, ~Insulin, ~BMI, ~DiabetesPedigreeFunction, ~Age, ~Outcome,
+7,197,57,33,240,24.4,0.305,24,NA)
+predictions <- predict(fit.cv, new_data)
+print(predictions)
+```
+
+#MÔ HÌNH RANDOM FOREST ##1. CÁC THƯ VIỆN SỬ DỤNG TRONG MÔ HÌNH RANDOM
+FOREST \### \*\*\*Nạp thư viện
+
+```{r}
+library(ggplot2)
+library(randomForest)
+```
+
+##2. XEM CẤU TRÚC VÀ BỘ DỮ LIỆU \### 2.1. Hiển thị bộ dữ liệu
+
+```{r}
+head(df)
+```
+
+### 2.2. Tổng quan về các thông tin thống kê của dataframe
+
+```{r}
+summary(df)
+```
+
+### 2.3. Hiển thị số lượng hàng và cột.
+
+```{r}
+dim(df)
+```
+
+##3. XÂY DỰNG MÔ HÌNH RANDOM FOREST \### 3.1. Chia dữ liệu thành tập
+huấn luyện và tập kiểm tra: - Chia dữ liệu thành huấn luyện và kiểm tra.
+80% dành cho huấn luyện, 20% dành cho kiểm tra. - Tạo tập huấn luyện từ
+dữ liệu đã chọn. - Tạo tập kiểm tra từ dữ liệu không được chọn vào tập
+huấn luyện.
+
+```{r}
+set.seed(123)
+
+samp <- sample(nrow(df), 0.8 * nrow(df))
+
+train <- df[samp, ]
+
+test <- df[-samp, ]
+```
+
+### 3.2. Kiểm tra kích thước của tập dữ liệu huấn luyện và kiểm tra.
+
+```{r}
+dim(train)
+dim(test) 
+```
+
+### 3.3. Huấn luyện mô hình và dự đoán:
+
+-   Huấn luyện mô hình Random Forest để dự đoán trạng thái bệnh từ các
+    biến khác (loại bỏ cột "Outcome" ra khỏi công thức), sử dụng 1000
+    cây quyết định và 8 biến ngẫu nhiên.
+-   Dự đoán trạng thái trên tập kiểm tra bằng mô hình đã huấn luyện.
+
+```{r}
+version <- randomForest(Outcome ~ ., data = train, ntree = 1000, mtry = 8)
+
+version
+
+version$confusion
+```
+
+### 3.4. Đánh giá hiệu suất của mô hình và hiển thị kết quả:
+
+#### \*\*\*Tính ma trận nhầm lẫn (confusion matrix) để đánh giá độ chính xác của mô hình trên tập kiểm tra.
+
+```{r}
+prediction <- predict(version, newdata = test)
+
+table(prediction, test$Outcome)
+
+prediction
+```
+
+#### \*\*\* Tạo dataframe kết quả dự đoán và thực tế.
+
+-   Đặt tên cho các cột trong dataframe kết quả.
+-   Chuyển đổi kết quả sang dạng dataframe.
+-   Hiển thị kết quả dưới dạng bảng để kiểm tra chi tiết.
+
+```{r}
+results<-cbind(prediction,test$Outcome)
+
+results
+
+colnames(results)<-c('pred','real')
+
+results<-as.data.frame(results)
+
+```
+
+#### \*\*\* Cuối cùng, tính độ chính xác của mô hình.
+
+```{r}
+sum(prediction==test$Outcome) / nrow(test)
+```
+
+Mô hình Random Forest có mức độ dự đoán chính xác lên đến 76% cũng là
+một tỷ lệ dự đoán đúng khá cao!
+
+#XÂY DỰNG MÔ HÌNH KNN (K-Nearest Neighbors) ##1. CÁC THƯ VIỆN SỬ DỤNG
+TRONG MÔ HÌNH KNN\
+\### \*\*\*Nạp thư viện
+
+```{r}
+library(gplots)
+library(caret)
+library(caret)
+library(e1071)
+library(class)
+```
+
+##2. CẤU TRÚC CỦA BỘ DỮ LIỆU ###2.1. Hiển thị bộ dữ liệu
+
+```{r }
+head(df)
+```
+
+###2.2. Thông tin về các cột dữ liệu
+
+```{r}
+str(df)
+```
+
+##3. XÂY DỰNG MÔ HÌNH KNN (K-Nearest Neighbors) ###3.1. Tạo tập dữ liệu
+Train và Test
+
+```{r}
+#Tách tập dữ liệu thành biến phản hồi và biến tính năng
+X <- df[, -9]  # Không bao gồm cột 'Outcome' 
+y <- df$Outcome
+# Train và test phân tách dữ liệu
+set.seed(123)  # Set seed để cố định ngẫu nhiên số liệu được sinh ra
+splitIndex <- createDataPartition(y, p = 0.8, list = FALSE)
+X_train <- X[splitIndex, ]
+X_test <- X[-splitIndex, ]
+y_train <- y[splitIndex]
+y_test <- y[-splitIndex]
+# Áp dụng tỉ lệ tiêu chuẩn để có kết quả tối ưu
+X_train <- scale(X_train)
+X_test <- scale(X_test)
+```
+
+###3.2. Phân tích thành phần chính \#### \*\*\*Đầu tiên chúng ta xác
+định hàm điền giá trị NaN với giá trị trung bình của nó trong tập dữ
+liệu
+
+```{r}
+#Áp dụng Principal Component Analysis (PCA) (Phân tích thành phần chính)
+pca <- prcomp(X_train, center = TRUE, scale. = TRUE)
+X_train <- pca$x[, 1:2]
+X_test <- predict(pca, newdata = X_test)[, 1:2]
+
+#Tạo dataframe train mới với các thành phần PCA
+pca_tr_df <- data.frame(Principal_Component_1 = X_train[, 1], Principal_Component_2 = X_train[, 2])
+
+#Tạo dataframe test mới với các thành phần PCA
+pca_ts_df <- data.frame(Principal_Component_1 = X_test[, 1], Principal_Component_2 = X_test[, 2])
+
+# Ghép nối các thành phần PCA với biến mục tiêu
+result_df <- data.frame(Principal_Component_1 = c(pca_tr_df$Principal_Component_1, pca_ts_df$Principal_Component_1),
+                        Principal_Component_2 = c(pca_tr_df$Principal_Component_2, pca_ts_df$Principal_Component_2),
+                        Outcome = c(y_train, y_test))
+
+# Hiển thị kết quả data frame
+print(result_df)
+```
+
+###3.3. Xây dựng mô hình KNN
+
+```{r}
+# Tạo control object cho cross-validation
+ctrl <- trainControl(method = "cv", number = 5)
+
+# Huấn luyện và đánh giá mô hình KNN với 5-fold cross-validation
+k <- 3  # Số láng giềng gần nhất để xem xét
+knn_model <- train(
+  x = X_train,
+  y = y_train,
+  method = "knn",
+  trControl = ctrl,
+  tuneGrid = data.frame(k = k)
+)
+
+knn_model$resample
+```
+
+# In ra điểm số Cross-Validation trung bình
+
+```{r}
+print(paste("Mean Cross-Validation Score:", mean(knn_model$resample$Accuracy)))
+```
+
+```{r}
+# Huấn luyện mô hình với toàn bộ tập huấn luyện
+final_knn_model <- knn(
+  train = X_train,
+  test = X_test,
+  cl = y_train,
+  k = knn_model$bestTune$k
+)
+```
+
+###3.4. Đánh giá hiệu suất của mô hình K-Nearest Neighborsvà hiển thị
+kết quả
+
+```{r}
+# Dự đoán trên tập kiểm tra
+pred_knn <- final_knn_model
+# Hiển thị báo cáo phân loại
+confusion_matrix <- table(pred_knn, y_test)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(confusion_matrix)
+cat("Accuracy = ", accuracy)
+```
+
+Mô hình KNN có mức độ dự đoán chính xác lên đến 71% cũng là một tỷ lệ dự
+đoán đúng khá cao!
